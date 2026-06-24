@@ -7,29 +7,22 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;background:radial-gradient(ellipse at 50% 40%,#2e2e2e,#111);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;overflow:hidden;user-select:none;}
-
-/* ── Shared controls style ── */
 .ctrl{display:flex;align-items:center;gap:24px;margin-top:20px;}
 .btn{background:transparent;border:2px solid rgba(255,255,255,.22);color:rgba(255,255,255,.72);width:46px;height:46px;border-radius:50%;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .2s,color .2s,transform .12s;line-height:1;}
 .btn:hover{border-color:rgba(255,255,255,.55);color:#fff;}
 .btn:active{transform:scale(.91);}
 .btn:disabled{opacity:.15;cursor:not-allowed;transform:none!important;}
-.info{color:rgba(255,255,255,.38);font-size:12px;letter-spacing:.08em;min-width:72px;text-align:center;}
 
-/* ── Desktop: turn.js ── */
+/* Desktop */
 #desk{display:none;flex-direction:column;align-items:center;}
 #book-wrap{position:relative;}
 #book-wrap::after{content:'';position:absolute;bottom:-18px;left:8%;right:8%;height:28px;background:radial-gradient(ellipse,rgba(0,0,0,.65),transparent 70%);filter:blur(6px);z-index:-1;pointer-events:none;}
 .page{background:#fff;overflow:hidden;}
 .page img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
 
-/* ── Mobile: custom flip ── */
+/* Mobile */
 #mob{display:none;flex-direction:column;align-items:center;}
-#m-scene{
-  --W:min(88vw,340px);--H:calc(min(88vw,340px)*1.414);
-  position:relative;width:var(--W);height:var(--H);
-  perspective:2400px;perspective-origin:50% 50%;
-}
+#m-scene{--W:min(88vw,340px);--H:calc(min(88vw,340px)*1.414);position:relative;width:var(--W);height:var(--H);perspective:2400px;perspective-origin:50% 50%;}
 #m-scene::after{content:'';position:absolute;bottom:-18px;left:5%;right:5%;height:28px;background:radial-gradient(ellipse,rgba(0,0,0,.6),transparent 70%);filter:blur(6px);z-index:-1;pointer-events:none;}
 .m-half{position:absolute;top:0;width:var(--W);height:var(--H);overflow:hidden;background:#fff;}
 #m-l{left:0;}
@@ -44,7 +37,6 @@ html,body{width:100%;height:100%;background:radial-gradient(ellipse at 50% 40%,#
 #m-fo{background:linear-gradient(to left,rgba(0,0,0,0) 0%,rgba(0,0,0,.05) 55%,rgba(0,0,0,.3) 85%,rgba(0,0,0,.5) 100%);}
 #m-bo{background:linear-gradient(to right,rgba(0,0,0,0) 0%,rgba(0,0,0,.05) 55%,rgba(0,0,0,.3) 85%,rgba(0,0,0,.5) 100%);}
 
-/* ── Show correct layout ── */
 @media(max-width:680px){
   html,body{overflow-y:auto;height:auto;min-height:100%;}
   #mob{display:flex;}
@@ -56,7 +48,6 @@ html,body{width:100%;height:100%;background:radial-gradient(ellipse at 50% 40%,#
 </head>
 <body>
 
-<!-- DESKTOP -->
 <div id="desk">
   <div id="book-wrap">
     <div id="flipbook">
@@ -72,12 +63,10 @@ html,body{width:100%;height:100%;background:radial-gradient(ellipse at 50% 40%,#
   </div>
   <div class="ctrl">
     <button class="btn" id="d-prev" disabled>&#8249;</button>
-    <span class="info" id="d-info"></span>
     <button class="btn" id="d-next">&#8250;</button>
   </div>
 </div>
 
-<!-- MOBILE -->
 <div id="mob">
   <div id="m-scene">
     <div class="m-half" id="m-l"><img src="" alt=""></div>
@@ -89,7 +78,6 @@ html,body{width:100%;height:100%;background:radial-gradient(ellipse at 50% 40%,#
   </div>
   <div class="ctrl">
     <button class="btn" id="m-prev" disabled>&#8249;</button>
-    <span class="info" id="m-info"></span>
     <button class="btn" id="m-next">&#8250;</button>
   </div>
 </div>
@@ -149,111 +137,115 @@ i,a.from[c],d[c],a.duration));a.frame(e==1?g[0]:g);if(i==a.duration){clearInterv
 <script>
 (function(){
 
-// ── MOBILE: pure CSS flip, one page at a time ──────────────────
-var mp = 0;
-var mBusy = false;
-var $ms = $('#m-scene'), $mL = $('#m-l'), $mFh = $('#m-fh');
-var $mFf = $('#m-ff'), $mFb = $('#m-fb');
-var $mFfi = $('#m-ffi'), $mFbi = $('#m-fbi');
-var $mFo = $('#m-fo'), $mBo = $('#m-bo'), $mLs = $('#m-ls');
+var mp = 0, mBusy = false;
+var $ms  = $('#m-scene'),
+    $mL  = $('#m-l').find('img'),
+    $mFh = $('#m-fh'),
+    $mFfi= $('#m-ffi'), $mFbi= $('#m-fbi'),
+    $mFo = $('#m-fo'),  $mBo = $('#m-bo'),
+    $mLs = $('#m-ls');
 
-function mRender() {
-  $mFh.hide();
-  $mL.find('img').attr('src', P[mp]);
-  $('#m-info').text((mp+1) + ' / ' + P.length);
-  $('#m-prev').prop('disabled', mp === 0);
-  $('#m-next').prop('disabled', mp === P.length - 1);
+function mRender(src) {
+  // Only update the background image when explicitly told to
+  if (src !== undefined) $mL.attr('src', src);
+  $mFh.hide(); $mLs.hide().css('opacity',0);
+  $('#m-prev').prop('disabled', mp===0);
+  $('#m-next').prop('disabled', mp===P.length-1);
 }
 
-function ease(t) { return t===1?1:1-Math.pow(2,-10*t); }
+function ease(t){return t===1?1:1-Math.pow(2,-10*t);}
 
-function mFlip(dir) {
-  if (mBusy) return;
-  if (dir > 0 && mp >= P.length-1) return;
-  if (dir < 0 && mp <= 0) return;
+function mFlip(dir){
+  if(mBusy) return;
+  if(dir>0 && mp>=P.length-1) return;
+  if(dir<0 && mp<=0) return;
   mBusy = true;
 
-  $mFfi.attr('src', P[mp]);
-  $mFbi.attr('src', P[mp + dir]);
-  $mFh.css({ left:0, transformOrigin: dir>0?'right center':'left center', transform:'rotateY(0deg)' }).show();
-  if (dir>0) { $mLs.css({left:'auto',right:0,background:'linear-gradient(to left,rgba(0,0,0,.25),transparent)'}); }
-  else       { $mLs.css({left:0,right:'auto',background:'linear-gradient(to right,rgba(0,0,0,.25),transparent)'}); }
-  $mLs.show();
-  $mFh[0].getBoundingClientRect();
+  var fromSrc = P[mp];
+  var toSrc   = P[mp + dir];
 
-  var ta = dir>0 ? -180 : 180, t0 = performance.now();
-  (function tick(now) {
-    var t = Math.min((now-t0)/650, 1), e = ease(t), a = ta*e, ab = Math.abs(a);
-    var lp = Math.sin(ab*Math.PI/180);
+  // Background shows the CURRENT page — never the arriving one
+  $mL.attr('src', fromSrc);
+
+  $mFfi.attr('src', fromSrc);
+  $mFbi.attr('src', toSrc);
+  $mFh.css({
+    left: 0,
+    transformOrigin: dir>0 ? 'right center' : 'left center',
+    transform: 'rotateY(0deg)'
+  }).show();
+
+  if(dir>0){
+    $mLs.css({left:'auto',right:0,
+      background:'linear-gradient(to left,rgba(0,0,0,.25),transparent)'});
+  } else {
+    $mLs.css({left:0,right:'auto',
+      background:'linear-gradient(to right,rgba(0,0,0,.25),transparent)'});
+  }
+  $mLs.show();
+  $mFh[0].getBoundingClientRect(); // force reflow
+
+  var ta=dir>0?-180:180, t0=performance.now();
+  (function tick(now){
+    var t=Math.min((now-t0)/650,1), e=ease(t), a=ta*e, ab=Math.abs(a);
+    var lp=Math.sin(ab*Math.PI/180);
     $mFh.css('transform','rotateY('+a+'deg)');
     $mLs.css('opacity',(lp*.55).toFixed(3));
     $mFo.css('opacity',(ab<90?lp*.65:0).toFixed(3));
     $mBo.css('opacity',(ab>90?Math.sin((180-ab)*Math.PI/180)*.55:0).toFixed(3));
-    if (t < 1) { requestAnimationFrame(tick); }
-    else { mp += dir; mBusy = false; mRender(); }
+    if(t<1){ requestAnimationFrame(tick); }
+    else {
+      mp += dir;
+      mBusy = false;
+      // NOW update background to arriving page and hide leaf
+      mRender(P[mp]);
+    }
   })(t0);
 }
 
 $('#m-next').on('click', function(){ mFlip(1); });
 $('#m-prev').on('click', function(){ mFlip(-1); });
 
-var mTx = 0;
-$ms[0].addEventListener('touchstart', function(e){ mTx = e.touches[0].clientX; }, {passive:true});
-$ms[0].addEventListener('touchend',   function(e){ var dx=e.changedTouches[0].clientX-mTx; if(Math.abs(dx)>40) mFlip(dx<0?1:-1); }, {passive:true});
+var mTx=0;
+$ms[0].addEventListener('touchstart',function(e){mTx=e.touches[0].clientX;},{passive:true});
+$ms[0].addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-mTx;
+  if(Math.abs(dx)>40) mFlip(dx<0?1:-1);
+},{passive:true});
 
-mRender();
+// Init: show first page
+mRender(P[0]);
 
 
-// ── DESKTOP: turn.js ───────────────────────────────────────────
-var $fb = $('#flipbook');
-
-function calcDesktopSize() {
-  var maxH = window.innerHeight - 100;
-  var maxW = (window.innerWidth - 80) / 2;
-  var PH = Math.min(maxH, 594);
-  var PW = Math.min(maxW, PH / 1.414);
-  PH = PW * 1.414;
-  return { w: PW, h: PH };
+var $fb=$('#flipbook');
+function calcSz(){
+  var maxH=window.innerHeight-80, maxW=(window.innerWidth-80)/2;
+  var PH=Math.min(maxH,594), PW=Math.min(maxW,PH/1.414);
+  return{w:PW,h:PW*1.414};
 }
-
-function initTurn() {
-  if ($fb.data('turn')) $fb.turn('destroy');
-  var sz = calcDesktopSize();
-  $fb.css({ width: sz.w*2, height: sz.h });
+function initTurn(){
+  if($fb.data('turn'))$fb.turn('destroy');
+  var sz=calcSz();
+  $fb.css({width:sz.w*2,height:sz.h});
   $fb.turn({
-    width: sz.w*2, height: sz.h,
-    autoCenter: true,
-    display: 'double',
-    acceleration: true,
-    gradients: true,
-    elevation: 50,
-    when: {
-      turned: function(e, page) { updateDeskUI(page); }
-    }
+    width:sz.w*2,height:sz.h,
+    autoCenter:true,display:'double',
+    acceleration:true,gradients:true,elevation:50,
+    when:{turned:function(e,pg){
+      $('#d-prev').prop('disabled',pg<=1);
+      $('#d-next').prop('disabled',pg>=$fb.turn('pages'));
+    }}
   });
-  updateDeskUI($fb.turn('page'));
+  $('#d-prev').prop('disabled',true);
+  $('#d-next').prop('disabled',$fb.turn('pages')<=1);
 }
-
-function updateDeskUI(page) {
-  var total = $fb.turn('pages');
-  $('#d-info').text(page + ' / ' + total);
-  $('#d-prev').prop('disabled', page <= 1);
-  $('#d-next').prop('disabled', page >= total);
-}
-
-$('#d-next').on('click', function(){ $fb.turn('next'); });
-$('#d-prev').on('click', function(){ $fb.turn('previous'); });
-$(document).on('keydown', function(e){
-  if(e.key==='ArrowRight'||e.key==='ArrowDown') $fb.turn('next');
-  if(e.key==='ArrowLeft'||e.key==='ArrowUp')   $fb.turn('previous');
+$('#d-next').on('click',function(){$fb.turn('next');});
+$('#d-prev').on('click',function(){$fb.turn('previous');});
+$(document).on('keydown',function(e){
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')$fb.turn('next');
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')$fb.turn('previous');
 });
-
-var dResizeTimer;
-$(window).on('resize', function(){
-  clearTimeout(dResizeTimer);
-  dResizeTimer = setTimeout(initTurn, 200);
-});
-
+var dT;$(window).on('resize',function(){clearTimeout(dT);dT=setTimeout(initTurn,200);});
 initTurn();
 
 })();
